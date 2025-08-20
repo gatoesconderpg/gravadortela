@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gravador de Tela Alternativo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #e6e6e6;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: rgba(18, 26, 60, 0.85);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #2a3a7a;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            color: #4ecca3;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #8e8e8e;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+        
+        .panel {
+            background-color: #152347;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            border: 1px solid #2a3a7a;
+        }
+        
+        .panel h2 {
+            color: #4ecca3;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #2a3a7a;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .button {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .record-btn {
+            background: linear-gradient(to right, #ff416c, #ff4b2b);
+            color: white;
+        }
+        
+        .record-btn:hover {
+            background: linear-gradient(to right, #ff4b2b, #ff416c);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 75, 43, 0.4);
+        }
+        
+        .stop-btn {
+            background: linear-gradient(to right, #1d976c, #93f9b9);
+            color: white;
+        }
+        
+        .stop-btn:hover {
+            background: linear-gradient(to right, #93f9b9, #1d976c);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(29, 151, 108, 0.4);
+        }
+        
+        .screenshot-btn {
+            background: linear-gradient(to right, #3a7bd5, #00d2ff);
+            color: white;
+        }
+        
+        .screenshot-btn:hover {
+            background: linear-gradient(to right, #00d2ff, #3a7bd5);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 210, 255, 0.4);
+        }
+        
+        .button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .button i {
+            font-size: 1.3rem;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+        
+        .status-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: #ff4b2b;
+        }
+        
+        .recording .status-indicator {
+            background-color: #1d976c;
+            box-shadow: 0 0 10px #1d976c;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .preview-container {
+            width: 100%;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 15px;
+            position: relative;
+        }
+        
+        #preview {
+            width: 100%;
+            height: 250px;
+            object-fit: contain;
+        }
+        
+        .recorded-list {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .recorded-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+        
+        .recorded-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .recorded-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .play-btn {
+            background-color: #4ecca3;
+            color: #000;
+        }
+        
+        .play-btn:hover {
+            background-color: #3bb992;
+            transform: scale(1.05);
+        }
+        
+        .download-btn {
+            background-color: #3a7bd5;
+            color: white;
+        }
+        
+        .download-btn:hover {
+            background-color: #2a6bc5;
+            transform: scale(1.05);
+        }
+        
+        .delete-btn {
+            background-color: #ff416c;
+            color: white;
+        }
+        
+        .delete-btn:hover {
+            background-color: #ff315c;
+            transform: scale(1.05);
+        }
+        
+        .timer {
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-align: center;
+            margin: 15px 0;
+            color: #4ecca3;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 10px rgba(78, 204, 163, 0.5);
+        }
+        
+        .instructions {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #152347;
+            border-radius: 12px;
+            border: 1px solid #2a3a7a;
+        }
+        
+        .instructions h3 {
+            color: #4ecca3;
+            margin-bottom: 15px;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+        }
+        
+        .tab-container {
+            margin-top: 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            background-color: #152347;
+            border: 1px solid #2a3a7a;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        
+        .tab.active {
+            background-color: #1a2a6c;
+            color: #4ecca3;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+            background-color: #152347;
+            border-radius: 0 5px 5px 5px;
+            border: 1px solid #2a3a7a;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #2a3a7a;
+            color: #8e8e8e;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Gravador de Tela Alternativo</h1>
+            <p class="subtitle">Usando HTML2Canvas e MediaStream API</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="panel">
+                <h2>Controles de Gravação</h2>
+                <div class="controls">
+                    <button id="recordBtn" class="button record-btn">
+                        <i>●</i> Iniciar Gravação
+                    </button>
+                    <button id="screenshotBtn" class="button screenshot-btn">
+                        <i>📸</i> Capturar Tela
+                    </button>
+                    <button id="stopBtn" class="button stop-btn" disabled>
+                        <i>■</i> Parar Gravação
+                    </button>
+                    
+                    <div class="timer">
+                        <span id="timer">00:00:00</span>
+                    </div>
+                    
+                    <div class="status" id="status">
+                        <div class="status-indicator"></div>
+                        <span id="statusText">Pronto para gravar</span>
+                    </div>
+                </div>
+                
+                <div class="preview-container">
+                    <video id="preview" controls></video>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>Gravações e Capturas</h2>
+                <p>Suas mídias aparecerão aqui:</p>
+                
+                <div class="tab-container">
+                    <div class="tabs">
+                        <div class="tab active" data-tab="recordings">Gravações</div>
+                        <div class="tab" data-tab="screenshots">Capturas</div>
+                    </div>
+                    
+                    <div id="recordingsTab" class="tab-content active">
+                        <div id="recordedList" class="recorded-list">
+                            <p id="noRecordings">Nenhuma gravação ainda. Clique em "Iniciar Gravação" para começar.</p>
+                        </div>
+                    </div>
+                    
+                    <div id="screenshotsTab" class="tab-content">
+                        <div id="screenshotsList" class="recorded-list">
+                            <p id="noScreenshots">Nenhuma captura de tela ainda. Clique em "Capturar Tela" para começar.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>Como usar este gravador de tela alternativo:</h3>
+            <ul>
+                <li><strong>Iniciar Gravação</strong>: Captura contínua da tela usando MediaStream API</li>
+                <li><strong>Capturar Tela</strong>: Tira uma foto instantânea da tela usando HTML2Canvas</li>
+                <li><strong>Parar Gravação</strong>: Finaliza a gravação em andamento</li>
+                <li>Alternar entre as abas "Gravações" e "Capturas" para ver seus arquivos</li>
+                <li>Faça download dos arquivos para compartilhar nas redes sociais</li>
+            </ul>
+        </div>
+    </div>
+    
+    <footer>
+        <p>Gravador de Tela Alternativo - Usando HTML2Canvas e MediaStream API</p>
+    </footer>
+
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script>
+        // Elementos da interface
+        const recordBtn = document.getElementById('recordBtn');
+        const screenshotBtn = document.getElementById('screenshotBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const preview = document.getElementById('preview');
+        const recordedList = document.getElementById('recordedList');
+        const screenshotsList = document.getElementById('screenshotsList');
+        const noRecordings = document.getElementById('noRecordings');
+        const noScreenshots = document.getElementById('noScreenshots');
+        const statusText = document.getElementById('statusText');
+        const status = document.getElementById('status');
+        const timer = document.getElementById('timer');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        // Variáveis de estado
+        let mediaRecorder;
+        let recordedChunks = [];
+        let startTime;
+        let timerInterval;
+        let stream;
+        let canvasStream;
+        
+        // Alternar entre abas
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                // Remover classe active de todas as tabs e conteúdos
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(tc => tc.classList.remove('active'));
+                
+                // Adicionar classe active à tab clicada
+                tab.classList.add('active');
+                document.getElementById(`${tabId}Tab`).classList.add('active');
+            });
+        });
+        
+        // Atualizar o temporizador
+        function updateTimer() {
+            const elapsedTime = Date.now() - startTime;
+            const hours = Math.floor(elapsedTime / 3600000);
+            const minutes = Math.floor((elapsedTime % 3600000) / 60000);
+            const seconds = Math.floor((elapsedTime % 60000) / 1000);
+            
+            timer.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        // Iniciar a gravação
+        async function startRecording() {
+            try {
+                // Solicitar acesso à tela
+                stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: {
+                        cursor: "always",
+                        displaySurface: "window" // ou "browser" para abas
+                    },
+                    audio: true // Capturar áudio também
+                });
+                
+                // Criar o MediaRecorder
+                const options = { mimeType: 'video/webm; codecs=vp9,opus' };
+                mediaRecorder = new MediaRecorder(stream, options);
+                
+                // Eventos do MediaRecorder
+                mediaRecorder.ondataavailable = handleDataAvailable;
+                mediaRecorder.onstop = stopRecording;
+                
+                // Iniciar a gravação
+                recordedChunks = [];
+                mediaRecorder.start(1000); // Coletar dados a cada 1 segundo
+                
+                // Atualizar a interface
+                recordBtn.disabled = true;
+                screenshotBtn.disabled = true;
+                stopBtn.disabled = false;
+                statusText.textContent = "Gravando...";
+                status.classList.add('recording');
+                
+                // Iniciar o temporizador
+                startTime = Date.now();
+                timerInterval = setInterval(updateTimer, 1000);
+                
+                // Mostrar preview
+                preview.srcObject = stream;
+                
+            } catch (error) {
+                console.error('Erro ao iniciar a gravação:', error);
+                alert(`Erro ao iniciar a gravação: ${error.message}`);
+            }
+        }
+        
+        // Capturar screenshot
+        async function takeScreenshot() {
+            try {
+                statusText.textContent = "Capturando tela...";
+                
+                // Usar html2canvas para capturar a página inteira
+                const canvas = await html2canvas(document.body, {
+                    allowTaint: true,
+                    useCORS: true,
+                    scale: 0.8 // Reduzir um pouco a qualidade para performance
+                });
+                
+                // Converter para blob
+                canvas.toBlob(function(blob) {
+                    // Criar URL para a imagem
+                    const imageURL = URL.createObjectURL(blob);
+                    
+                    // Adicionar à lista de screenshots
+                    addScreenshotToList(imageURL);
+                    
+                    statusText.textContent = "Captura de tela realizada!";
+                }, 'image/png');
+                
+            } catch (error) {
+                console.error('Erro ao capturar tela:', error);
+                statusText.textContent = "Erro na captura de tela";
+            }
+        }
+        
+        // Manipular dados disponíveis
+        function handleDataAvailable(event) {
+            if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        }
+        
+        // Parar a gravação
+        function stopRecording() {
+            // Parar a mídia
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            
+            // Parar todas as tracks
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            
+            // Parar o temporizador
+            clearInterval(timerInterval);
+            
+            // Atualizar a interface
+            recordBtn.disabled = false;
+            screenshotBtn.disabled = false;
+            stopBtn.disabled = true;
+            statusText.textContent = "Gravação finalizada";
+            status.classList.remove('recording');
+            
+            // Criar o blob do vídeo
+            const blob = new Blob(recordedChunks, {
+                type: 'video/webm'
+            });
+            
+            // Criar URL para o vídeo
+            const videoURL = URL.createObjectURL(blob);
+            
+            // Adicionar à lista de gravações
+            addRecordingToList(videoURL);
+            
+            // Limpar o preview
+            preview.srcObject = null;
+        }
+        
+        // Adicionar gravação à lista
+        function addRecordingToList(videoURL) {
+            // Remover a mensagem "Nenhuma gravação"
+            if (noRecordings) {
+                noRecordings.style.display = 'none';
+            }
+            
+            // Criar elemento para a gravação
+            const recordingItem = document.createElement('div');
+            recordingItem.className = 'recorded-item';
+            
+            // Criar data para nomear o arquivo
+            const now = new Date();
+            const timestamp = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+            
+            recordingItem.innerHTML = `
+                <div class="recording-info">
+                    <strong>Gravação - ${timestamp}</strong>
+                    <div>Duração: ${timer.textContent}</div>
+                </div>
+                <div class="recorded-actions">
+                    <button class="action-btn play-btn" data-url="${videoURL}">Reproduzir</button>
+                    <a class="action-btn download-btn" href="${videoURL}" download="gravacao-${timestamp}.webm">Download</a>
+                    <button class="action-btn delete-btn">Excluir</button>
+                </div>
+            `;
+            
+            // Adicionar à lista
+            recordedList.appendChild(recordingItem);
+            
+            // Adicionar evento para o botão de reproduzir
+            const playBtn = recordingItem.querySelector('.play-btn');
+            playBtn.addEventListener('click', function() {
+                preview.srcObject = null;
+                preview.src = this.getAttribute('data-url');
+                preview.controls = true;
+                preview.play();
+            });
+            
+            // Adicionar evento para o botão de excluir
+            const deleteBtn = recordingItem.querySelector('.delete-btn');
+            deleteBtn.addEventListener('click', function() {
+                recordedList.removeChild(recordingItem);
+                
+                // Mostrar mensagem se não houver gravações
+                if (recordedList.children.length === 0) {
+                    noRecordings.style.display = 'block';
+                }
+            });
+        }
+        
+        // Adicionar screenshot à lista
+        function addScreenshotToList(imageURL) {
+            // Remover a mensagem "Nenhuma captura"
+            if (noScreenshots) {
+                noScreenshots.style.display = 'none';
+            }
+            
+            // Criar elemento para a screenshot
+            const screenshotItem = document.createElement('div');
+            screenshotItem.className = 'recorded-item';
+            
+            // Criar data para nomear o arquivo
+            const now = new Date();
+            const timestamp = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+            
+            screenshotItem.innerHTML = `
+                <div class="recording-info">
+                    <strong>Captura - ${timestamp}</strong>
+                </div>
+                <div class="recorded-actions">
+                    <a class="action-btn download-btn" href="${imageURL}" download="captura-${timestamp}.png" target="_blank">Download</a>
+                    <button class="action-btn delete-btn">Excluir</button>
+                </div>
+            `;
+            
+            // Adicionar à lista
+            screenshotsList.appendChild(screenshotItem);
+            
+            // Adicionar evento para o botão de excluir
+            const deleteBtn = screenshotItem.querySelector('.delete-btn');
+            deleteBtn.addEventListener('click', function() {
+                screenshotsList.removeChild(screenshotItem);
+                
+                // Mostrar mensagem se não houver screenshots
+                if (screenshotsList.children.length === 0) {
+                    noScreenshots.style.display = 'block';
+                }
+            });
+        }
+        
+        // Event listeners para os botões
+        recordBtn.addEventListener('click', startRecording);
+        screenshotBtn.addEventListener('click', takeScreenshot);
+        stopBtn.addEventListener('click', stopRecording);
+        
+        // Verificar suporte a APIs
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+            recordBtn.disabled = true;
+            stopBtn.disabled = true;
+            statusText.textContent = "Seu navegador não suporta gravação de tela. Use Chrome, Firefox ou Edge.";
+        }
+    </script>
+</body>
+</html>
